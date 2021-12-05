@@ -27,3 +27,5 @@ VERY IMPORTANT STUFF
 - Ensure to merge into current release branch after you git push into your own branch, if git conflict occurs, check what is the conflict is and resolve it. 
   - If cannot resolve then contact the person whose code you got conflict with.  
 - Ensure your commit messages make sense pls
+- In short, the process will be: 
+-   create new branch from current branch -> code -> merge all other subsets of release-0.0.0 -> release-0.0.0 -> release-0.1.0 (next release)
