@@ -1,13 +1,20 @@
 #Dummy code for services
+class Queue:
+    def __init__(self):
+        self.items = []
 
-def createQ():
-    return
+    def isEmpty(self):
+        return self.items == []
 
-def deleteQ():
-    return
+    def enqueue(self, item):
+        self.items.append(item)
 
-def deleteUser():
-    return
+    def dequeue(self):
+        return self.items.pop()
+    
+    def dequeueIndex(self, index: int):
+        return self.items.pop(index)
 
-def addUser():
-    return
+    def size(self):
+        return len(self.items)
+    
