@@ -1,16 +1,14 @@
 import os
 from flask import Flask
 from bot.api.route.home import home_api
-# from bot.api.handler.main import bot_handler
+from bot.api.handler.main import bot_handler
 
 def create_app():
     app = Flask(__name__)
-
-    app.config['BOT_KEY'] = os.getenv('BOT_KEY')
     app.config.from_pyfile('config.py')
-    # register home blueprint
+    # register blueprints
     app.register_blueprint(home_api, url_prefix='/api')
-    # app.register_blueprint(bot_handler)
+    app.register_blueprint(bot_handler, url_prefix='/')
     return app
     
 if __name__ == '__main__':

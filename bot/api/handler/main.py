@@ -1,3 +1,10 @@
-from flask import Blueprint
+import os
+from flask import Blueprint, request
+import telegram
 
-main_handler = Blueprint('bot', __name__)
+bot_handler = Blueprint('bot', __name__)
+
+
+@bot_handler.route('/')
+def respond():
+    return "Bot Handler"
