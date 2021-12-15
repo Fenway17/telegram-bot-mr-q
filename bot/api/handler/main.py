@@ -5,7 +5,7 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 bot_handler = Blueprint('bot', __name__)
-BOT_KEY = os.getenv('BOT_KEY')
+BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot
 bot = telegram.Bot(token=BOT_KEY)
 
 # global strings to use in bot replies
