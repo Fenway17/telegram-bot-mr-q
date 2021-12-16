@@ -5,8 +5,8 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 bot_handler = Blueprint('bot', __name__)
-BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot
-bot = telegram.Bot(token=BOT_KEY)
+BOT_KEY = os.getenv('5024320262:AAEAa5rcSXHaYYC4RqfbbSkK5ycVr4Hfu6w') # reads .env file from your root folder of this bot
+bot = telegram.Bot(token='5024320262:AAEAa5rcSXHaYYC4RqfbbSkK5ycVr4Hfu6w')
 
 # global strings to use in bot replies
 version = "0.1.0"
@@ -54,7 +54,7 @@ async def respond_message(update: telegram.Update):
     # force text message to conform to UTF8 (may not be needed)
     text = update.message.text.encode('utf-8').decode()
 
-    
+
     # check command
     if text == "/start":
        bot.sendChatAction(chat_id=chat_id, action="typing")

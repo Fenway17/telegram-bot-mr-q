@@ -31,5 +31,8 @@ class Queue:
     def size(self):
         return len(self.items)
 
+    def updateLimit(self, newLimit):
+        self.limit = newLimit
+
     
     

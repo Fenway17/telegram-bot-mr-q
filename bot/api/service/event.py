@@ -5,7 +5,7 @@ from queue import Queue
 class Event:
     id = 0
 
-    def __init__(self, eventId, name, date, time):
+    def __init__(self, name, date, time):
         self.eventId = Event.id 
         self.name = name 
         self.date = date
@@ -25,10 +25,10 @@ class Event:
 
     def addToEvent(self, user):
         try: 
-            self.participants.enqueue()
+            self.participants.enqueue(user)
         except queueFullException:
             try: 
-                self.waitingList.enqueue()
+                self.waitingList.enqueue(user)
             except waitingListFullException:
                 print("rip the event is full")
 
@@ -52,5 +52,14 @@ class Event:
         queueIndex = self.waitingList.indexOf(user)
         self.waitingList.dequeueIndex(queueIndex)
     
+    def getEventId(self):
+        return self.eventId
+
+    def updateParticipantsLimit(self, newLimit):
+        self.participants.updateLimit(newLimit)
+
+    def updateWaitingListLimit(self, newLimit):
+        self.waitingList.updateLimit(newLimit)
+
     
 
