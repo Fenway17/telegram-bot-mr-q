@@ -1,45 +1,48 @@
 #to-do create exceptions
 
-from queue import Queue
+from customqueue import CustomQueue
 
 class Event:
     id = 0
 
     def __init__(self, name, date, time):
-        self.eventId = Event.id 
+        self.eventId = Event.id #should this be changed to name + date/time?
         self.name = name 
         self.date = date
         self.time = time
-        self.participants = Queue()
-        self.waitingList = Queue()
+        self.participants = CustomQueue()
+        self.waitingList = CustomQueue()
 
         Event.id += 1
 
-    def joinEvent(self, user):
+    def get_event_id(self):
+        return self.eventId
+
+# Add user to a new event
+    def add_user_to_event(self, user):
         if self.participants.contains(user):
             print("throw already in queue exception")
         elif self.waitingList.contains(user):
             print("throw already in waiting list exception")
         else:
-            self.addToEvent(user)
-
-    def addToEvent(self, user):
-        try: 
-            self.participants.enqueue(user)
-        except queueFullException:
             try: 
-                self.waitingList.enqueue(user)
-            except waitingListFullException:
-                print("rip the event is full")
+                self.participants.enqueue(user)
+            except queueFullException:
+                try: 
+                    self.waitingList.enqueue(user)
+                except waitingListFullException:
+                    print("rip the event is full")
+
+# Remove user from an event
 
     # there is some code repetition here
-    def removeFromEvent(self, user):
+    def remove_from_event(self, user):
         if self.participants.contains(user):
-            removeFromParticipants(user)
+            self.remove_from_participant_queue(user)
         elif self.waitingList.contains(user):
-            removeFromWaitingList(user)
+            self.removeFromWaitingList(user)
 
-    def removeFromParticipants(self, user): 
+    def remove_from_participant_queue(self, user): 
         queueIndex = self.participants.indexOf(user)
         if not self.waitingList.isEmpty(): 
             self.participants.dequeueIndex(queueIndex)
@@ -51,9 +54,6 @@ class Event:
     def removeFromWaitingList(self, user):
         queueIndex = self.waitingList.indexOf(user)
         self.waitingList.dequeueIndex(queueIndex)
-    
-    def getEventId(self):
-        return self.eventId
 
     def updateParticipantsLimit(self, newLimit):
         self.participants.updateLimit(newLimit)

@@ -1,14 +1,13 @@
-#Dummy code for services
-class Queue:
+class CustomQueue:
     def __init__(self, limit = None):
         self.items = []
         self.limit = limit
 
-    def isEmpty(self):
+    def is_empty(self):
         return self.items == []
 
     def enqueue(self, item):
-        if not self.isFull():
+        if not self.is_full():
             self.items.insert(0, item)
         else: 
             print("throw queue is full exception")
@@ -16,22 +15,22 @@ class Queue:
     def dequeue(self):
         return self.items.pop()
     
-    def dequeueIndex(self, index: int):
+    def dequeue_index(self, index: int):
         return self.items.pop(index)
 
-    def indexOf(self, item):
+    def index_of(self, item):
         return self.items.index(item)
 
     def contains(self, item):
         return item in self.items 
 
-    def isFull(self):
+    def is_full(self):
         return self.limit and self.size() == self.limit
     
     def size(self):
         return len(self.items)
 
-    def updateLimit(self, newLimit):
+    def update_limit(self, newLimit):
         self.limit = newLimit
 
     
