@@ -9,6 +9,7 @@ python-telegram-bot = "*"
 python-dotenv = "*"
 flask-marshmallow = "*"
 marshmallow = "*"
+requests = "*"
 
 [dev-packages]
 black = "*"
