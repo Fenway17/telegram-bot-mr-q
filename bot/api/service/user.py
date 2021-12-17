@@ -1,10 +1,10 @@
 from event import Event
 
 class User:
-    def __init__(self, username, chatId, events: list):
+    def __init__(self, username, chatId, events = []):
         self.username = username 
         self.chatId = chatId 
-        self.events = []
+        self.events = events
 
     def get_username(self):
         return self.username
@@ -23,18 +23,18 @@ class Admin(User):
         super().__init__(chatId, events)
         self.eventsBeingManaged = eventsBeingManaged
 
-    def create_event(self, name, date, time):
-        newEvent = Event(name, date, time)
+    def create_event(self, name, date, time, participantsLimit, waitingListLimit = None):
+        newEvent = Event(name, date, time, participantsLimit, waitingListLimit)
         self.eventsBeingManaged[newEvent.get_event_id()] = newEvent
 
     def delete_event(self, eventId):
         self.eventsBeingManaged.pop(eventId)
 
-    def get_managed_events(self, eventId):
+    def get_managed_event(self, eventId):
         return self.eventsBeingManaged[eventId]
 
     def add_user_to_event(self, event, user):
-        event.joinEvent(user)
+        event.add_user_to_event(user)
 
     def remove_user_from_event(self, event, user):
         event.remove_from_event(user)
