@@ -1,10 +1,14 @@
 from event import Event
 
 class User:
-    def __init__(self, username, chatId, events = []):
+    def __init__(self, userId, username, chatId, events = []):
+        self.userId = userId
         self.username = username 
         self.chatId = chatId 
         self.events = events
+
+    def get_user_id(self):
+        return self.userId
 
     def get_username(self):
         return self.username
