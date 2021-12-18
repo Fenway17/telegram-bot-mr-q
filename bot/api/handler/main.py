@@ -11,21 +11,18 @@ BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this b
 # global strings to use in bot replies
 version = "0.1.0"
 bot_welcome = """
-    Welcome to version {0} of QueueNow! \n
-    Use /newqueue to start a new queue!
-    """.format(version)
+Welcome to version {0} of QueueNow!\n
+Use /newqueue to start a new queue!
+""".format(version)
 
 bot_error = "The command was not recognized, try a different one!"
 bot_help = """These are the list of commands you can use! \n
-    /start : start the bot
-    /newqueue : create a new queue
-    /checkqueues : check the queues you are in or manage
-    """
+/start : start the bot
+/newqueue : create a new queue
+/checkqueues : check the queues you are in or manage
+"""
 bot_new_queue = "Give me a name for your new queue!"
 bot_check_queue = "Which queues do you want?"
-
-# global variables
-typing_duration = 0.3
 
 # bot commands
 BOT_COMMANDS = [
@@ -34,6 +31,9 @@ BOT_COMMANDS = [
     {"command":"/newqueue","description":"Create a new queue!"},
     {"command":"/checkqueues","description":"Checks your queues!"}
     ]
+
+NEWQUEUE, NAME_RESPONSE, LIMIT, COMPLETED = range(4)
+eventInfo = []
 
 def setMyCommands():
     # sets command suggestions for the bot
@@ -46,28 +46,62 @@ def start_command(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     
-    context.bot.send_chat_action(chat_id=chat_id, action="typing", timeout=1)
-    time.sleep(typing_duration)
     update.message.reply_text(text=bot_welcome, reply_to_message_id=msg_id)
 
-def help_command(update, context):
-    # chat and message IDs
-    chat_id = update.message.chat.id
-    msg_id = update.message.message_id
-    
-    context.bot.send_chat_action(chat_id=chat_id, action="typing", timeout=1)
-    time.sleep(typing_duration)
-    update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
+    return NEWQUEUE
 
 def newqueue_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
+    username = update.message.from_user
+
+    reply = "Hello {}! Let's start off with the name of your event! ".format(username['first_name'])
     
-    context.bot.send_chat_action(chat_id=chat_id, action="typing", timeout=1)
-    time.sleep(typing_duration)
-    update.message.reply_text(text=bot_new_queue, reply_to_message_id=msg_id)
+    update.message.reply_text(text="{}".format(reply), reply_to_message_id=msg_id)
     
+    return NAME_RESPONSE
+    
+def name_response(update, context):
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    name = update.message.text
+    eventInfo.append(name)
+    
+    update.message.reply_text("""{}? Sounds like it's going to be a lit event!\n
+    So how many people are you expecting for {}?""".format(name, name))
+
+    return LIMIT
+
+def limit_command(update, context):
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    eventLimit = update.message.text
+    eventInfo.append(eventLimit)
+    
+    update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
+    
+    return COMPLETED
+
+def completedQueue(update, context):
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    
+    keyboard = [
+            [InlineKeyboardButton("I'm going!", callback_data='enqueue')],
+            [InlineKeyboardButton("Nah not feeling it!", callback_data='dequeue')],
+        ]
+
+    queueTemplate = "{}, max limit: {} pax \n\n Waiting List: \n".format(eventInfo[0], eventInfo[1])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    update.message.reply_text( 
+        text=queueTemplate, 
+        reply_to_message_id=msg_id, 
+        reply_markup=reply_markup)
+
+    return ConversationHandler.END
+
 def checkqueues_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
@@ -80,8 +114,6 @@ def checkqueues_command(update, context):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    context.bot.send_chat_action(chat_id=chat_id, action="typing", timeout=1)
-    time.sleep(typing_duration)
     update.message.reply_text( 
         text=bot_check_queue, 
         reply_to_message_id=msg_id, 
@@ -127,6 +159,18 @@ def handle_inline_query(update, context):
     text = inline_query.query.lower()
     user_id = str(inline_query.from_user.id)
 
+
+
+##################################################
+            # Static Functions #
+##################################################
+def help_command(update, context):
+    # chat and message IDs
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    
+    update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
+
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
 
@@ -134,13 +178,21 @@ def main():
     updater = Updater(os.getenv('BOT_KEY'), use_context=True)
     dp = updater.dispatcher
 
-    dp.add_handler(CommandHandler("start", start_command))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("newqueue", newqueue_command))
-    dp.add_handler(CommandHandler("checkqueues", checkqueues_command))
+    # Main state handler
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start_command)],
+        states = {
+            NEWQUEUE: [CommandHandler('newqueue', newqueue_command)],
+            NAME_RESPONSE: [MessageHandler(Filters.text, name_response)],
+            LIMIT: [MessageHandler(Filters.text, limit_command)],
+            COMPLETED: [MessageHandler(Filters.text, completedQueue)]
+        },
+        fallbacks=[],
+    )
+
+    dp.add_handler(conv_handler)
     
-    dp.add_handler(MessageHandler(Filters.text, help_command))
-    
+    dp.add_handler(MessageHandler(Filters.text, help_command)) 
     dp.add_error_handler(error)
     
     setMyCommands()
