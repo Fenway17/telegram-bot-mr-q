@@ -10,46 +10,43 @@ BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this b
 
 # global strings to use in bot replies
 version = "0.1.0"
-bot_welcome = """
-Welcome to version {0} of QueueNow!\n
-Use /newqueue to start a new queue!
-""".format(version)
 
-bot_error = "The command was not recognized, try a different one!"
-bot_help = """These are the list of commands you can use! \n
-/start : start the bot
-/newqueue : create a new queue
-/checkqueues : check the queues you are in or manage
-"""
-bot_new_queue = "Give me a name for your new queue!"
-bot_check_queue = "Which queues do you want?"
-
-# bot commands
-BOT_COMMANDS = [
-    {"command":"/start", "description":"Starts the bot!"},
-    {"command":"/help","description":"Gets you some help!"},
-    {"command":"/newqueue","description":"Create a new queue!"},
-    {"command":"/checkqueues","description":"Checks your queues!"}
-    ]
-
-NEWQUEUE, NAME_RESPONSE, LIMIT, COMPLETED = range(4)
+NAME_RESPONSE, LIMIT, COMPLETED = range(3)
 eventInfo = []
 
-def setMyCommands():
-    # sets command suggestions for the bot
-    # TODO: literally does not work right now - yr
-    send_text = 'https://api.telegram.org/bot' + str(BOT_KEY) + '/setMyCommands?commands=' + str(json.dumps(BOT_COMMANDS) ) 
-    response = requests.get(send_text)
-   
+##################################################
+             # Command Functions #
+##################################################
 def start_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
+    username = update.message.from_user
     
+    bot_welcome = """
+        Hello {}! Welcome to version {} of QueueNow!\n
+        Use /newqueue to start a new queue!
+        Use /checkqueues to check your current queues!
+        Use /help to show more commands!
+        """.format(username, version)
+    
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text=bot_welcome, reply_to_message_id=msg_id)
 
-    return NEWQUEUE
-
+def help_command(update, context):
+    # chat and message IDs
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    
+    bot_help = """These are the list of commands you can use! \n
+        /start : start the bot
+        /newqueue : create a new queue
+        /checkqueues : check the queues you are in or manage
+        """
+    
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
+    update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
+    
 def newqueue_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
@@ -58,6 +55,7 @@ def newqueue_command(update, context):
 
     reply = "Hello {}! Let's start off with the name of your event! ".format(username['first_name'])
     
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text="{}".format(reply), reply_to_message_id=msg_id)
     
     return NAME_RESPONSE
@@ -68,8 +66,9 @@ def name_response(update, context):
     name = update.message.text
     eventInfo.append(name)
     
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text("""{}? Sounds like it's going to be a lit event!\n
-    So how many people are you expecting for {}?""".format(name, name))
+So how many people are you expecting for {}?""".format(name, name))
 
     return LIMIT
 
@@ -77,24 +76,37 @@ def limit_command(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     eventLimit = update.message.text
-    eventInfo.append(eventLimit)
     
-    update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
+    try: # test if given message is a whole number
+        eventLimitInt = int(eventLimit)
+        eventLimit = str(eventLimitInt) # prevent users from giving a float number
+        eventInfo.append(eventLimit)
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
+        
+        return COMPLETED
     
-    return COMPLETED
-
+    except Exception as e:
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text("Sorry, please give me a whole number!".format(eventLimit))
+        
+        return LIMIT
+        
 def completedQueue(update, context):
+    # TODO: currently bot waits for ANY random message before sending this function - yr
+    # TODO: depending on how backend is communicated with, might need revision on the enqueue/dequeue - yr
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     
     keyboard = [
-            [InlineKeyboardButton("I'm going!", callback_data='enqueue')],
-            [InlineKeyboardButton("Nah not feeling it!", callback_data='dequeue')],
+            [InlineKeyboardButton("I'm going!", callback_data='enqueue'), 
+             InlineKeyboardButton("Nah not feeling it!", callback_data='dequeue')]
         ]
 
-    queueTemplate = "{}, max limit: {} pax \n\n Waiting List: \n".format(eventInfo[0], eventInfo[1])
+    queueTemplate = "{}, max limit: {} pax \n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text( 
         text=queueTemplate, 
         reply_to_message_id=msg_id, 
@@ -111,9 +123,11 @@ def checkqueues_command(update, context):
             [InlineKeyboardButton("Queues I'm in", callback_data='queues_in')],
             [InlineKeyboardButton("Queues I manage", callback_data='queues_manage')],
         ]
-
+    
+    bot_check_queue = "Which queues do you want?"
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text( 
         text=bot_check_queue, 
         reply_to_message_id=msg_id, 
@@ -127,11 +141,11 @@ def handle_message(update, context):
     text = str(update.message.text).lower()
     response = "test"
 
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(response)
 
 def handle_callback_query(update, context):
-    # TODO: handle the callbacks from inline keyboard - yr
-    # chat and message IDs
+    # TODO: separate this function into multiple functions to handle the different callbacks queries - yr
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     callback_data = update.callback_query.data
@@ -140,12 +154,18 @@ def handle_callback_query(update, context):
     
     if callback_data == 'queues_in':
         # TODO: call backend to retrieve queues user is participating in - yr
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         context.bot.answerCallbackQuery(text='Here are your queues!', callback_query_id=query_id)
-        pass
+        context.bot.sendMessage(
+            chat_id=chat_id, 
+            text="""Here are your queues: \n\nQueue 1 \nQueue 2""")
     elif callback_data == 'queues_manage':
         # TODO: call backend to retrieve queues user is managing (aka admin) - yr
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         context.bot.answerCallbackQuery(text='Here are your queues!', callback_query_id=query_id)
-        pass
+        context.bot.sendMessage(
+            chat_id=chat_id, 
+            text="""Here are your queues: \n\nQueue 1 \nQueue 2""")
     else:
         context.bot.answerCallbackQuery(text='Invalid data!', callback_query_id=query_id)
         
@@ -159,40 +179,57 @@ def handle_inline_query(update, context):
     text = inline_query.query.lower()
     user_id = str(inline_query.from_user.id)
 
-
-
 ##################################################
-            # Static Functions #
+              # Static Functions #
 ##################################################
-def help_command(update, context):
-    # chat and message IDs
-    chat_id = update.message.chat.id
-    msg_id = update.message.message_id
+def setMyCommands():
+    # sets command suggestions for the bot
     
-    update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
+    # bot commands
+    BOT_COMMANDS = [
+        {"command":"/start", "description":"Starts the bot!"},
+        {"command":"/help","description":"Shows you the commands!"},
+        {"command":"/newqueue","description":"Create a new queue!"},
+        {"command":"/checkqueues","description":"Checks your queues!"}
+        ]
 
+    send_text = 'https://api.telegram.org/bot' + str(BOT_KEY) + '/setMyCommands?commands=' + str(json.dumps(BOT_COMMANDS) ) 
+    response = requests.get(send_text)
+    
 def error(update, context):
     print(f"Update {update} caused error {context.error}")
 
+##################################################
+               # Main Function #
+##################################################
 def main():
+    # runs the bot setup
     updater = Updater(os.getenv('BOT_KEY'), use_context=True)
     dp = updater.dispatcher
 
-    # Main state handler
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start_command)],
+    # main state handler
+    convo_handler = ConversationHandler(
+        entry_points=[CommandHandler('newqueue', newqueue_command)],
         states = {
-            NEWQUEUE: [CommandHandler('newqueue', newqueue_command)],
             NAME_RESPONSE: [MessageHandler(Filters.text, name_response)],
             LIMIT: [MessageHandler(Filters.text, limit_command)],
             COMPLETED: [MessageHandler(Filters.text, completedQueue)]
         },
         fallbacks=[],
     )
-
-    dp.add_handler(conv_handler)
+    # command handlers
+    dp.add_handler(convo_handler)
+    dp.add_handler(CommandHandler('start', start_command))
+    dp.add_handler(CommandHandler('checkqueues', checkqueues_command))
     
-    dp.add_handler(MessageHandler(Filters.text, help_command)) 
+    # callback query handlers
+    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='queues_in'))
+    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='queues_manage'))
+    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='enqueue'))
+    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='dequeue'))
+    
+    # other handlers
+    dp.add_handler(MessageHandler(Filters.text, help_command)) # sends help command for any random message
     dp.add_error_handler(error)
     
     setMyCommands()
