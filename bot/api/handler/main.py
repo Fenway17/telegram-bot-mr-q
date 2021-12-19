@@ -25,10 +25,10 @@ def start_command(update, context):
     
     bot_welcome = """
         Hello {}! Welcome to version {} of QueueNow!\n
-        Use /newqueue to start a new queue!
-        Use /checkqueues to check your current queues!
-        Use /help to show more commands!
-        """.format(username, version)
+Use /newqueue to start a new queue!
+Use /checkqueues to check your current queues!
+Use /help to show more commands!
+        """.format(username['first_name'], version)
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text=bot_welcome, reply_to_message_id=msg_id)
@@ -39,10 +39,9 @@ def help_command(update, context):
     msg_id = update.message.message_id
     
     bot_help = """These are the list of commands you can use! \n
-        /start : start the bot
-        /newqueue : create a new queue
-        /checkqueues : check the queues you are in or manage
-        """
+/start : start the bot
+/newqueue : create a new queue
+/checkqueues : check the queues you are in or manage"""
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
