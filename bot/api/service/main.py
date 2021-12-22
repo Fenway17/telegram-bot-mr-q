@@ -16,6 +16,7 @@ class EventManager:
             raise self.throw_exception(event, 'exist')
         
     def remove_event(self, event):
+        print("Removing event: " + event.name + " from EventManager")
         if event in self.eventHashMap.keys(): # exists in dictionary
             userList = self.eventHashMap[event]
             for user in userList:
@@ -26,6 +27,7 @@ class EventManager:
             raise self.throw_exception(event, 'not exist')
             
     def add_user(self, user):
+        print("Adding user: " + user.username + "to EventManager user database")
         if user not in self.allUsers:
             self.allUsers.append(user)
         else:
