@@ -10,6 +10,7 @@ python-dotenv = "*"
 flask-marshmallow = "*"
 marshmallow = "*"
 requests = "*"
+packages = "*"
 
 [dev-packages]
 black = "*"

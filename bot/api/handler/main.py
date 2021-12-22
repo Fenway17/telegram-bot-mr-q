@@ -2,8 +2,10 @@ import os
 import time
 import json
 import requests
+import re
 from telegram.ext import *
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from bot.api.service import *
 
 # global bot key
 BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot
@@ -11,7 +13,10 @@ BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this b
 # global strings to use in bot replies
 version = "0.1.0"
 
+# conversation handler constants
 NAME_RESPONSE, LIMIT = range(2)
+QUEUES_IN, QUEUES_MANAGE = range(2)
+
 eventInfo = []
 
 ##################################################
@@ -21,14 +26,15 @@ def start_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
-    username = update.message.from_user
+    user = update.message.from_user
+    first_name = user['first_name']
     
     bot_welcome = """
         Hello {}! Welcome to version {} of QueueNow!\n
 Use /newqueue to start a new queue!
 Use /checkqueues to check your current queues!
 Use /help to show more commands!
-        """.format(username['first_name'], version)
+        """.format(first_name, version)
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text=bot_welcome, reply_to_message_id=msg_id)
@@ -50,25 +56,25 @@ def newqueue_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
-    username = update.message.from_user
+    user = update.message.from_user
+    first_name = user['first_name']
 
-    reply = "Hello {}! Let's start off with the name of your event! ".format(username['first_name'])
+    reply = "Hello {}! Let's start off with the name of your event! ".format(first_name)
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(text="{}".format(reply), reply_to_message_id=msg_id)
     
     return NAME_RESPONSE
 
-
 def name_response(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
-    name = update.message.text
-    eventInfo.append(name)
+    event_name = update.message.text
+    eventInfo.append(event_name)
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text("""{}? Sounds like it's going to be a lit event!\n
-So how many people are you expecting for {}?""".format(name, name))
+So how many people are you expecting for {}?""".format(event_name, event_name))
 
     return LIMIT
 
@@ -81,8 +87,6 @@ def limit_command(update, context):
         eventLimitInt = int(eventLimit)
         eventLimit = str(eventLimitInt) # prevent users from giving a float number
         eventInfo.append(eventLimit)
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
-        update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
         
         keyboard = [
             [InlineKeyboardButton("Publish Poll", callback_data='publish_poll')], 
@@ -92,10 +96,12 @@ def limit_command(update, context):
                 InlineKeyboardButton("I'm not going!", callback_data='dequeue')]
         ]
 
+        # TODO: standardize format of showing queue
         queueTemplate = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
         update.message.reply_text( 
             text=queueTemplate, 
             reply_to_message_id=msg_id, 
@@ -105,10 +111,9 @@ def limit_command(update, context):
     
     except Exception as e:
         context.bot.sendChatAction(chat_id=chat_id, action="typing")
-        update.message.reply_text("Sorry, please give me a whole number!".format(eventLimit))
+        update.message.reply_text("Sorry, please give me a whole number!")
         print(e)
         return LIMIT
-    
 
 def checkqueues_command(update, context):
     # chat and message IDs
@@ -116,12 +121,12 @@ def checkqueues_command(update, context):
     msg_id = update.message.message_id
     
     keyboard = [
-            [InlineKeyboardButton("Queues I'm in", callback_data='queues_in')],
-            [InlineKeyboardButton("Queues I manage", callback_data='queues_manage')],
+            ["Queues I'm in"],
+            ["Queues I manage"],
         ]
     
     bot_check_queue = "Which queues do you want?"
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True) 
     
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text( 
@@ -130,6 +135,7 @@ def checkqueues_command(update, context):
         reply_markup=reply_markup)
     
 def handle_message(update, context):
+    # currently not in use - yr
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
@@ -140,52 +146,151 @@ def handle_message(update, context):
     context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(response)
 
-def handle_callback_query(update, context):
-    # TODO: separate this function into multiple functions to handle the different callbacks queries - yr
-    chat_id = update.callback_query.message.chat.id
-    msg_id = update.callback_query.message.message_id
-    callback_data = update.callback_query.data
-    user_id = str(update.callback_query.from_user.id)
-    query_id = update.callback_query.id
+# def handle_callback_query(update, context):
+#     # not needed for current iteration - yr
+#     chat_id = update.callback_query.message.chat.id
+#     msg_id = update.callback_query.message.message_id
+#     callback_data = update.callback_query.data
+#     user_id = str(update.callback_query.from_user.id)
+#     query_id = update.callback_query.id
 
-    if callback_data == 'queues_in':
-        # TODO: call backend to retrieve queues user is participating in - yr
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
-        context.bot.answerCallbackQuery(text='Here are your queues!', callback_query_id=query_id)
-        context.bot.sendMessage(
-            chat_id=chat_id, 
-            text="""Here are your queues: \n\nQueue 1 \nQueue 2""")
-    elif callback_data == 'queues_manage':
-        # TODO: call backend to retrieve queues user is managing (aka admin) - yr
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
-        context.bot.answerCallbackQuery(text='Here are your queues!', callback_query_id=query_id)
-        context.bot.sendMessage(
-            chat_id=chat_id, 
-            text="""Here are your queues: \n\nQueue 1 \nQueue 2""")
-    else:
-        context.bot.answerCallbackQuery(text='Invalid data!', callback_query_id=query_id)
-
+#     context.bot.answerCallbackQuery(text='Invalid data!', callback_query_id=query_id)
 
 ##############################################
             # TODO for integration
 ##############################################
 
 def hcq_publish(update, context): 
-    pass
+    chat_id = update.callback_query.message.chat.id
+    msg_id = update.callback_query.message.message_id
+    query_id = update.callback_query.id
+    
+    # TODO: publish queue similar to countmeinbot
+    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
 
 def hcq_update(update, context):     
-    pass
+    chat_id = update.callback_query.message.chat.id
+    msg_id = update.callback_query.message.message_id
+    query_id = update.callback_query.id
+    
+    # TODO: get bot to fetch the current queue and edit the message to show the updated queue
+    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
 
 def hcq_delete(update, context): 
-    pass
+    chat_id = update.callback_query.message.chat.id
+    msg_id = update.callback_query.message.message_id
+    query_id = update.callback_query.id
 
+    # TODO: get bot to delete queue
+    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    
 def hcq_enqueue(update, context): 
-    pass
-
+    chat_id = update.callback_query.message.chat.id
+    msg_id = update.callback_query.message.message_id
+    query_id = update.callback_query.id
+    
+    # TODO: add user to queue
+    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    
 def hcq_dequeue(update, context): 
-    pass
+    chat_id = update.callback_query.message.chat.id
+    msg_id = update.callback_query.message.message_id
+    query_id = update.callback_query.id
+    
+    # TODO: remove user from queue
+    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    
+def check_queues_in(update, context): 
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    
+    # TODO: get bot to fetch the queues and show the queue
+    # TODO: call backend to retrieve queues user is participating in - yr
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
+    context.bot.sendMessage(
+        chat_id=chat_id, 
+        text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
+    context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
+    
+    return QUEUES_IN
 
+def check_queues_manage(update, context): 
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    
+    # TODO: get bot to fetch the queues and show the queue
+    # TODO: call backend to retrieve queues user is managing (aka admin) - yr
+    context.bot.sendChatAction(chat_id=chat_id, action="typing")
+    context.bot.sendMessage(
+        chat_id=chat_id, 
+        text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
+    context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
+    
+    return QUEUES_MANAGE
+
+def display_queues_in(update, context):
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    selected_queue = update.message.text
+    
+    try:
+        selected_queue = int(selected_queue)
+        keyboard = [ 
+            [InlineKeyboardButton("I'm not going anymore!", callback_data='dequeue')],
+            [InlineKeyboardButton("Update queue", callback_data='update_poll')]
+        ]
+
+        # TODO: standardize format of showing queue
+        queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text( 
+            text=queueTemplate, 
+            reply_to_message_id=msg_id, 
+            reply_markup=reply_markup)
+
+        return ConversationHandler.END
+    
+    except Exception as e: 
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text("Sorry, please give me a whole number!")
+        print(e)
+        return QUEUES_IN
+    
+    
+def display_queues_manage(update, context):
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+    selected_queue = update.message.text
+    
+    try:
+        selected_queue = int(selected_queue)
+        keyboard = [ 
+            [InlineKeyboardButton("I'm not going anymore!", callback_data='dequeue')],
+            [InlineKeyboardButton("Update queue", callback_data='update_poll')]
+        ]
+
+        # TODO: standardize format of showing queue
+        queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text( 
+            text=queueTemplate, 
+            reply_to_message_id=msg_id, 
+            reply_markup=reply_markup)
+
+        return ConversationHandler.END
+    
+    except Exception as e: 
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text("Sorry, please give me a whole number!")
+        print(e)
+        return QUEUES_MANAGE
+    
 def handle_inline_query(update, context):
+    # currently not in use - yr
     # TODO: handle inline query if there is any we add in the future - yr
     # chat and message IDs
     chat_id = update.inline_query.message.chat.id
@@ -221,8 +326,8 @@ def main():
     updater = Updater(os.getenv('BOT_KEY'), use_context=True)
     dp = updater.dispatcher
 
-    # main state handler
-    convo_handler = ConversationHandler(
+    # newqueue conversation handler
+    newqueue_convo_handler = ConversationHandler(
         entry_points=[CommandHandler('newqueue', newqueue_command)],
         states = {
             NAME_RESPONSE: [MessageHandler(Filters.text, name_response)],
@@ -230,10 +335,25 @@ def main():
         },
         fallbacks=[],
     )
+    
+    # checkqueue conversation handler
+    checkqueue_convo_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(Filters.regex(re.compile('Queues I\'m in', re.IGNORECASE)), check_queues_in),
+            MessageHandler(Filters.regex(re.compile('Queues I manage', re.IGNORECASE)), check_queues_in)],
+        states = {
+            QUEUES_IN: [MessageHandler(Filters.text, display_queues_in)],
+            QUEUES_MANAGE: [MessageHandler(Filters.text, display_queues_manage)]
+        },
+        fallbacks=[],
+    )
+    
     # command handlers
-    dp.add_handler(convo_handler)
+    dp.add_handler(newqueue_convo_handler)
+    dp.add_handler(checkqueue_convo_handler)
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('checkqueues', checkqueues_command))
+    dp.add_handler(CommandHandler('help', help_command))
     
     # callback query handlers
     dp.add_handler(CallbackQueryHandler(hcq_publish, pattern='publish_poll'))
@@ -241,10 +361,13 @@ def main():
     dp.add_handler(CallbackQueryHandler(hcq_delete, pattern='delete_poll'))
     dp.add_handler(CallbackQueryHandler(hcq_enqueue, pattern='enqueue'))
     dp.add_handler(CallbackQueryHandler(hcq_dequeue, pattern='dequeue'))
+    # dp.add_handler(CallbackQueryHandler(hcq_check_queues_in, pattern='queues_in'))
+    # dp.add_handler(CallbackQueryHandler(hcq_check_queues_manage, pattern='queues_manage'))
     
     # other handlers
-    # dp.add_handler(MessageHandler(Filters.text, help_command)) # sends help command for any random message
     dp.add_error_handler(error)
+    dp.add_handler(MessageHandler(Filters.command, help_command))
+    # dp.add_handler(MessageHandler(Filters.text & (~Filters.command), help_command))
     
     setMyCommands()
     
