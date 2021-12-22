@@ -1,6 +1,5 @@
 from customqueue import CustomQueue
 # FOR DEBUGGING
-from user import * 
 
 # global strings to use for exception messages 
 already_in_participants = "The user you are trying to add is already in the participants list"

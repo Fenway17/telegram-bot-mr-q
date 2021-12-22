@@ -101,8 +101,8 @@ if __name__ == '__main__':
         e.add_user_to_event(newEvent, user)
             
     for event, userList in e.eventHashMap.items():
-        print(event.name, " - partipants queue size", event.participants.size())
-        print(event.name, " - waitingList queue size", event.waitingList.size())
+        print(event.name, " - partipants queue size", event.participants_list.size())
+        print(event.name, " - waitingList queue size", event.waiting_list.size())
     
 
 # Hashmap Key: event Values: array of user
