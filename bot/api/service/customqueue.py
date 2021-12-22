@@ -11,12 +11,16 @@ class CustomQueue:
 
     def enqueue(self, item):
         if not self.is_full():
-            self.items.insert(0, item)
+            self.items.append(item)
         else: 
             raise Exception(queue_is_full)
 
     def dequeue(self):
         return self.items.pop()
+    
+    def remove(self, item):
+        if item in self.items:
+            self.items.remove(item)
     
     def dequeue_index(self, index: int):
         return self.items.pop(index)
