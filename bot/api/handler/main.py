@@ -11,7 +11,7 @@ BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this b
 # global strings to use in bot replies
 version = "0.1.0"
 
-NAME_RESPONSE, LIMIT, COMPLETED = range(3)
+NAME_RESPONSE, LIMIT = range(2)
 eventInfo = []
 
 ##################################################
@@ -58,7 +58,8 @@ def newqueue_command(update, context):
     update.message.reply_text(text="{}".format(reply), reply_to_message_id=msg_id)
     
     return NAME_RESPONSE
-    
+
+
 def name_response(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
@@ -83,35 +84,31 @@ def limit_command(update, context):
         context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
         
-        return COMPLETED
+        keyboard = [
+            [InlineKeyboardButton("Publish Poll", callback_data='publish_poll')], 
+            [InlineKeyboardButton("Update Poll", callback_data='update_poll'),
+                InlineKeyboardButton("Delete Poll", callback_data='delete_poll')],
+            [InlineKeyboardButton("I'm going!", callback_data='enqueue'),
+                InlineKeyboardButton("I'm not going!", callback_data='dequeue')]
+        ]
+
+        queueTemplate = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+        update.message.reply_text( 
+            text=queueTemplate, 
+            reply_to_message_id=msg_id, 
+            reply_markup=reply_markup)
+
+        return ConversationHandler.END
     
     except Exception as e:
         context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text("Sorry, please give me a whole number!".format(eventLimit))
-        
+        print(e)
         return LIMIT
-        
-def completedQueue(update, context):
-    # TODO: currently bot waits for ANY random message before sending this function - yr
-    # TODO: depending on how backend is communicated with, might need revision on the enqueue/dequeue - yr
-    chat_id = update.message.chat.id
-    msg_id = update.message.message_id
     
-    keyboard = [
-            [InlineKeyboardButton("I'm going!", callback_data='enqueue'), 
-             InlineKeyboardButton("Nah not feeling it!", callback_data='dequeue')]
-        ]
-
-    queueTemplate = "{}, max limit: {} pax \n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
-    update.message.reply_text( 
-        text=queueTemplate, 
-        reply_to_message_id=msg_id, 
-        reply_markup=reply_markup)
-
-    return ConversationHandler.END
 
 def checkqueues_command(update, context):
     # chat and message IDs
@@ -150,7 +147,7 @@ def handle_callback_query(update, context):
     callback_data = update.callback_query.data
     user_id = str(update.callback_query.from_user.id)
     query_id = update.callback_query.id
-    
+
     if callback_data == 'queues_in':
         # TODO: call backend to retrieve queues user is participating in - yr
         context.bot.sendChatAction(chat_id=chat_id, action="typing")
@@ -167,8 +164,27 @@ def handle_callback_query(update, context):
             text="""Here are your queues: \n\nQueue 1 \nQueue 2""")
     else:
         context.bot.answerCallbackQuery(text='Invalid data!', callback_query_id=query_id)
-        
-    
+
+
+##############################################
+            # TODO for integration
+##############################################
+
+def hcq_publish(update, context): 
+    pass
+
+def hcq_update(update, context):     
+    pass
+
+def hcq_delete(update, context): 
+    pass
+
+def hcq_enqueue(update, context): 
+    pass
+
+def hcq_dequeue(update, context): 
+    pass
+
 def handle_inline_query(update, context):
     # TODO: handle inline query if there is any we add in the future - yr
     # chat and message IDs
@@ -183,13 +199,12 @@ def handle_inline_query(update, context):
 ##################################################
 def setMyCommands():
     # sets command suggestions for the bot
-    
     # bot commands
     BOT_COMMANDS = [
         {"command":"/start", "description":"Starts the bot!"},
-        {"command":"/help","description":"Shows you the commands!"},
         {"command":"/newqueue","description":"Create a new queue!"},
-        {"command":"/checkqueues","description":"Checks your queues!"}
+        {"command":"/checkqueues","description":"Checks your queues!"},
+        {"command":"/help","description":"Shows you the commands!"}
         ]
 
     send_text = 'https://api.telegram.org/bot' + str(BOT_KEY) + '/setMyCommands?commands=' + str(json.dumps(BOT_COMMANDS) ) 
@@ -211,8 +226,7 @@ def main():
         entry_points=[CommandHandler('newqueue', newqueue_command)],
         states = {
             NAME_RESPONSE: [MessageHandler(Filters.text, name_response)],
-            LIMIT: [MessageHandler(Filters.text, limit_command)],
-            COMPLETED: [MessageHandler(Filters.text, completedQueue)]
+            LIMIT: [MessageHandler(Filters.text, limit_command)]
         },
         fallbacks=[],
     )
@@ -222,13 +236,14 @@ def main():
     dp.add_handler(CommandHandler('checkqueues', checkqueues_command))
     
     # callback query handlers
-    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='queues_in'))
-    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='queues_manage'))
-    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='enqueue'))
-    dp.add_handler(CallbackQueryHandler(handle_callback_query, pattern='dequeue'))
+    dp.add_handler(CallbackQueryHandler(hcq_publish, pattern='publish_poll'))
+    dp.add_handler(CallbackQueryHandler(hcq_update, pattern='update_poll'))
+    dp.add_handler(CallbackQueryHandler(hcq_delete, pattern='delete_poll'))
+    dp.add_handler(CallbackQueryHandler(hcq_enqueue, pattern='enqueue'))
+    dp.add_handler(CallbackQueryHandler(hcq_dequeue, pattern='dequeue'))
     
     # other handlers
-    dp.add_handler(MessageHandler(Filters.text, help_command)) # sends help command for any random message
+    # dp.add_handler(MessageHandler(Filters.text, help_command)) # sends help command for any random message
     dp.add_error_handler(error)
     
     setMyCommands()
