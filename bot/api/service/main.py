@@ -5,31 +5,31 @@ import user as User
 class EventManager: 
     def __init__(self):
         print("Initialising Event Manager")
-        self.eventHashMap = {} # event -> [user]
-        self.allUsers = []
+        self.event_hash_map = {} # event -> [user]
+        self.all_users = []
 
     def add_event(self, event):
         print("Adding event: " + event.name + " to EventManager")
-        if event not in self.eventHashMap:
-            self.eventHashMap[event] = []
+        if event not in self.event_hash_map:
+            self.event_hash_map[event] = []
         else:
             raise self.throw_exception(event, 'exist')
         
     def remove_event(self, event):
         print("Removing event: " + event.name + " from EventManager")
-        if event in self.eventHashMap.keys(): # exists in dictionary
-            userList = self.eventHashMap[event]
-            for user in userList:
+        if event in self.event_hash_map.keys(): # exists in dictionary
+            user_list = self.event_hash_map[event]
+            for user in user_list:
                 user.leave_event(event)
-            self.eventHashMap.pop(event)
+            self.event_hash_map.pop(event)
             
         else:
             raise self.throw_exception(event, 'not exist')
             
     def add_user(self, user):
         print("Adding user: " + user.username + "to EventManager user database")
-        if user not in self.allUsers:
-            self.allUsers.append(user)
+        if user not in self.all_users:
+            self.all_users.append(user)
         else:
             raise self.throw_exception(user, 'exist')
 
@@ -43,14 +43,14 @@ class EventManager:
     def add_user_to_event(self, event, user):
         print("Adding " + user.username + " to " + event.name)
         #user exists
-        if user in self.allUsers:
+        if user in self.all_users:
             # check if user already in event
-            if user in self.eventHashMap[event]:
+            if user in self.event_hash_map[event]:
                 #user already in event, throw error
                 raise self.throw_exception(user, 'exist' , 'already in event participant/waiting list')
             else:
                 #user not in event, add him/her to event
-                self.eventHashMap[event].append(user)
+                self.event_hash_map[event].append(user)
                 event.add_user_to_event(user)
                 user.add_event(event)
                 
@@ -63,9 +63,9 @@ class EventManager:
     def remove_user_from_event(self, event, user):
         print("Removing " + user.username + " from " + event.name)
         #user exists
-        if user in self.allUsers:
+        if user in self.all_users:
             # check if user already in event
-            if user in self.eventHashMap[event]:
+            if user in self.event_hash_map[event]:
                 #user already in event
                 # self.eventHashMap[event].remove(user)
                 user.leave_event(event)
@@ -93,7 +93,7 @@ class EventManager:
 
 # DEBUGGING TOOLS
     def print_event_users(self, event):
-        if event not in self.eventHashMap.keys(): # does not exists in dictionary
+        if event not in self.event_hash_map.keys(): # does not exists in dictionary
             raise self.throw_exception(event, 'not exist', '-debug not in event, unable to get')
         print('==============PARTICIPANT LIST==============') 
         pl = event.participants_list.items
@@ -123,13 +123,13 @@ if __name__ == '__main__':
         e.add_user(user)
         e.add_user_to_event(newEvent, user)
             
-    for event, userList in e.eventHashMap.items():
+    for event, userList in e.event_hash_map.items():
         print(event.name, " - partipants queue size", event.participants_list.size())
         print(event.name, " - waitingList queue size", event.waiting_list.size())
     print('BEFORE')
     e.print_event_users(newEvent)
             
-    for event, userList in e.eventHashMap.items():
+    for event, userList in e.event_hash_map.items():
         e.remove_user_from_event(event, usertodlt)
         e.remove_user_from_event(event, usertodlt2)
         # testuser = User.User(26, str(26), str(26), [])
