@@ -62,6 +62,7 @@ class Event:
     def update_waiting_list_limit(self, newLimit):
         self.waiting_list.update_limit(newLimit)
 
+
 # ------------------ DEBUG CODE ------------------
 # if __name__ == '__main__':
 #     # e1 = Event("bball", "20 dec", "11am", 2, 0)
