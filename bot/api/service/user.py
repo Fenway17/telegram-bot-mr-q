@@ -1,14 +1,14 @@
 from event import Event
 
 class User:
-    def __init__(self, userId, username, chatId, events = []):
-        self.userId = userId
+    def __init__(self, user_id, username, chat_id, events = []):
+        self.user_id = user_id
         self.username = username 
-        self.chatId = chatId 
+        self.chat_id = chat_id 
         self.events = events
 
     def get_user_id(self):
-        return self.userId
+        return self.user_id
 
     def get_username(self):
         return self.username
@@ -23,19 +23,19 @@ class User:
         self.events.remove(event) # to-do discuss changes here
 
 class Admin(User):
-    def __init__(self, chatId, events: dict, eventsBeingManaged: dict):
-        super().__init__(chatId, events)
-        self.eventsBeingManaged = eventsBeingManaged
+    def __init__(self, user_id, username, chat_id, events_being_managed: dict, events = []):
+        super().__init__(user_id, username, chat_id, events)
+        self.events_being_managed = events_being_managed
 
-    def create_event(self, name, date, time, participantsLimit, waitingListLimit = None):
-        newEvent = Event(name, date, time, participantsLimit, waitingListLimit)
-        self.eventsBeingManaged[newEvent.get_event_id()] = newEvent
+    def create_event(self, name, date, time, participants_limit, waiting_list_limit = None):
+        newEvent = Event(name, date, time, participants_limit, waiting_list_limit)
+        self.events_being_managed[newEvent.get_event_id()] = newEvent
 
     def delete_event(self, eventId):
-        self.eventsBeingManaged.pop(eventId)
+        self.events_being_managed.pop(eventId)
 
     def get_managed_event(self, eventId):
-        return self.eventsBeingManaged[eventId]
+        return self.events_being_managed[eventId]
 
     def add_user_to_event(self, event, user):
         event.add_user_to_event(user)

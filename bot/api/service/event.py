@@ -1,5 +1,4 @@
 from customqueue import CustomQueue
-# FOR DEBUGGING
 
 # global strings to use for exception messages 
 already_in_participants = "The user you are trying to add is already in the participants list"
@@ -10,18 +9,28 @@ event_is_full = "The event is full. You cannot add the user to this event."
 class Event:
     id = 0
 
-    def __init__(self, name, date, time, participantsLimit, waitingListLimit = None):
-        self.eventId = Event.id #should this be changed to name + date/time?
+    def __init__(self, name, date, time, participants_limit, waiting_list_limit = None):
+        self.eventId = Event.id
         self.name = name 
         self.date = date
         self.time = time
-        self.participants_list = CustomQueue(participantsLimit)
-        self.waiting_list = CustomQueue(waitingListLimit)
+        self.participants_list = CustomQueue(participants_limit)
+        self.waiting_list = CustomQueue(waiting_list_limit)
 
         Event.id += 1
 
     def get_event_id(self):
         return self.eventId
+
+    def print_participant_list(self):
+        for user in self.participants_list.items:
+            print("###Participants List for " + self.name + "###")
+            print("User: " + user.username)
+
+    def get_waiting_list(self):
+        for user in self.waiting_list.items:
+            print("###Waiting List for " + self.name + "###")
+            print("User: " + user.username)
 
     # Add user to a new event
     def add_user_to_event(self, user):
@@ -41,30 +50,18 @@ class Event:
     # Remove user from an event
     def remove_from_event(self, user):
         if self.participants_list.contains(user):
-            self.remove_from_participants_list(user)
+            self.participants_list.remove(user)
         elif self.waiting_list.contains(user):
-            self.remove_from_waiting_list(user)
+            self.waiting_list.remove(user)
         else: 
             raise Exception(not_in_event)
 
-    def remove_from_participants_list(self, user): 
-        queueIndex = self.participants_list.indexOf(user)
-        if not self.waiting_list.isEmpty(): 
-            self.participants_list.dequeueIndex(queueIndex)
-            newParticipant = self.waiting_list.dequeue()
-            self.participants_list.enqueue(newParticipant)
-        else: 
-            self.participants_list.dequeueIndex(queueIndex)
+    def update_participants_limit(self, newLimit):
+        self.participants_list.update_limit(newLimit)
 
-    def remove_from_waiting_list(self, user):
-        queueIndex = self.waiting_list.indexOf(user)
-        self.waiting_list.dequeueIndex(queueIndex)
+    def update_waiting_list_limit(self, newLimit):
+        self.waiting_list.update_limit(newLimit)
 
-    def updateParticipantsLimit(self, newLimit):
-        self.participants_list.updateLimit(newLimit)
-
-    def updateWaitingListLimit(self, newLimit):
-        self.waiting_list.updateLimit(newLimit)
 
 # ------------------ DEBUG CODE ------------------
 # if __name__ == '__main__':
