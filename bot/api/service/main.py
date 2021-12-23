@@ -7,7 +7,7 @@ class EventManager:
         print("Initialising Event Manager")
         self.event_hash_map = {} # event -> [user]
         self.all_users = []
-
+    
     def add_event(self, event):
         print("Adding event: " + event.name + " to EventManager")
         if event not in self.event_hash_map:
@@ -27,7 +27,7 @@ class EventManager:
             raise self.throw_exception(event, 'not exist')
             
     def add_user(self, user):
-        print("Adding user: " + user.username + "to EventManager user database")
+        print("Adding user: " + user.username + " to EventManager user database")
         if user not in self.all_users:
             self.all_users.append(user)
         else:
@@ -58,8 +58,7 @@ class EventManager:
             #user does not exist
             raise self.throw_exception(user, 'not exist', '\'{username}\' does not exist'
                 .format(username=user.get_username()))
-
-
+    
     def remove_user_from_event(self, event, user):
         print("Removing " + user.username + " from " + event.name)
         #user exists

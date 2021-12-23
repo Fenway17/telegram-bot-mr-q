@@ -16,7 +16,7 @@ class CustomQueue:
             raise Exception(queue_is_full)
 
     def dequeue(self):
-        return self.items.pop()
+        return self.items.pop(0)
     
     def remove(self, item):
         if item in self.items:

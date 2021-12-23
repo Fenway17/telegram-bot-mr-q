@@ -51,6 +51,11 @@ class Event:
     def remove_from_event(self, user):
         if self.participants_list.contains(user):
             self.participants_list.remove(user)
+            if not self.waiting_list.is_empty():
+                new_participant_user = self.waiting_list.dequeue()
+                print("pop " + new_participant_user.username + " from waiting list")
+                print("add " + new_participant_user.username + " into participant list")
+                self.participants_list.enqueue(new_participant_user) 
         elif self.waiting_list.contains(user):
             self.waiting_list.remove(user)
         else: 
