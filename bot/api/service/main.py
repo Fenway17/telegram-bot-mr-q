@@ -80,6 +80,9 @@ class EventManager:
             raise self.throw_exception(user, 'not exist', '\'{username}\' does not exist'
                 .format(username=user.username))
 
+    def get_user_events(self, user):
+        return user.get_events()
+        
     def throw_exception(self, cause, reason, comment=''):
         err = ''
         match reason:
