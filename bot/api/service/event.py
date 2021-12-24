@@ -14,6 +14,7 @@ class Event:
         self.name = name 
         self.date = date
         self.time = time
+        self.participants_limit = participants_limit # added this for convenience - yr
         self.participants_list = CustomQueue(participants_limit)
         self.waiting_list = CustomQueue(waiting_list_limit)
 

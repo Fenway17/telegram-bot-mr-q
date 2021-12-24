@@ -1,8 +1,8 @@
 import os, time, json, requests, re
 import datetime 
 from telegram.ext import *
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from bot.api.service import *
+from telegram import *
+# from ..service import event as Event, user as User, main as EventManager
 
 # global bot key
 BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot
@@ -82,7 +82,7 @@ def limit_command(update, context):
         eventInfo.append(eventLimit)
         
         keyboard = [
-            [InlineKeyboardButton("Publish Poll", callback_data='publish_poll')], 
+            [InlineKeyboardButton("Publish Poll", switch_inline_query='PLACEHOLDER')], 
             [InlineKeyboardButton("Update Poll", callback_data='update_poll'),
                 InlineKeyboardButton("Delete Poll", callback_data='delete_poll')],
             [InlineKeyboardButton("I'm going!", callback_data='enqueue'),
@@ -111,11 +111,11 @@ def checkqueues_command(update, context):
     msg_id = update.message.message_id
     
     keyboard = [
-            ["Queues I'm in"],
-            ["Queues I manage"],
+            ["Queues I'm participating in!"],
+            ["Queues I'm managing!"],
         ]
     
-    bot_check_queue = "Which queues do you want?"
+    bot_check_queue = "Which queues do you want to check?"
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True) 
     
     update.message.reply_text( 
@@ -146,14 +146,6 @@ def handle_message(update, context):
 ##############################################
             # TODO for integration
 ##############################################
-
-def hcq_publish(update, context): 
-    chat_id = update.callback_query.message.chat.id
-    msg_id = update.callback_query.message.message_id
-    query_id = update.callback_query.id
-    
-    # TODO: publish queue similar to countmeinbot
-    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
 
 def hcq_update(update, context):     
     chat_id = update.callback_query.message.chat.id
@@ -269,18 +261,62 @@ def display_queues_manage(update, context):
         return QUEUES_MANAGE
     
 def handle_inline_query(update, context):
-    # currently not in use - yr
-    # TODO: handle inline query if there is any we add in the future - yr
-    # chat and message IDs
-    chat_id = update.inline_query.message.chat.id
-    msg_id = update.inline_query.message.message_id
+    query_id = update.inline_query.id
     inline_query = update.inline_query
     text = inline_query.query.lower()
     user_id = str(inline_query.from_user.id)
 
+    if text == "": # user input nothing
+        return
+    
+    # TODO: handle inline query
+    results = [
+        InlineQueryResultArticle(
+            id="PLACEHOLDER",
+            title="EVENTNAMEPLACEHOLDER",
+            input_message_content=InputTextMessageContent("CONTENTPLACEHOLDER"),
+        ),
+    ]
+
+    context.bot.answerInlineQuery(inline_query_id=query_id, results=results)
+    
 ##################################################
-              # Static Functions #
+           # Static Helper Functions #
 ##################################################
+def build_queue_message(event):
+    # fetch variables
+    event_id = event.id
+    event_name = event.name
+    event_date = event.date
+    event_time = event.time 
+    event_participants = event.participants_list
+    event_participants_max = str(event.participants_limit)
+    event_waiting = event.waiting_list
+    
+    participants = ""
+    waiting = ""
+    participants_count = 0
+    waiting_count = 0
+    for person in event_participants:
+        name = person.name
+        participants.append(name + "\n")
+        participants_count += 1
+    
+    for person in event_waiting:
+        name = person.name
+        waiting.append(name + "\n")
+        waiting_count += 1
+    
+    message_content = """
+{}\n
+Participating! ({}/{} people)
+{}\n
+Waiting! ({} people)
+{}\n
+""".format(event_name, str(participants_count), event_participants_max, participants, str(waiting_count), waiting)
+    
+    return message_content
+
 def setMyCommands():
     # sets command suggestions for the bot
     # bot commands
@@ -335,13 +371,15 @@ def main():
     dp.add_handler(CommandHandler('help', help_command))
     
     # callback query handlers
-    dp.add_handler(CallbackQueryHandler(hcq_publish, pattern='publish_poll'))
     dp.add_handler(CallbackQueryHandler(hcq_update, pattern='update_poll'))
     dp.add_handler(CallbackQueryHandler(hcq_delete, pattern='delete_poll'))
     dp.add_handler(CallbackQueryHandler(hcq_enqueue, pattern='enqueue'))
     dp.add_handler(CallbackQueryHandler(hcq_dequeue, pattern='dequeue'))
     # dp.add_handler(CallbackQueryHandler(hcq_check_queues_in, pattern='queues_in'))
     # dp.add_handler(CallbackQueryHandler(hcq_check_queues_manage, pattern='queues_manage'))
+
+    # inline query handlers
+    dp.add_handler(InlineQueryHandler(handle_inline_query))
     
     # other handlers
     dp.add_error_handler(error)
@@ -349,6 +387,10 @@ def main():
     # dp.add_handler(MessageHandler(Filters.text & (~Filters.command), help_command))
     
     setMyCommands()
+    
+    ############# FOR TESTING ##################################################
+    # e = EventManager.EventManager()
+    ############################################################################
     
     print('Bot Started....')
     updater.start_polling()
