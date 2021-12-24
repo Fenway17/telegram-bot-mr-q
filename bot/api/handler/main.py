@@ -1,8 +1,5 @@
-import os
-import time
-import json
-import requests
-import re
+import os, time, json, requests, re
+import datetime 
 from telegram.ext import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from bot.api.service import *
@@ -17,6 +14,7 @@ version = "0.1.0"
 NAME_RESPONSE, LIMIT = range(2)
 QUEUES_IN, QUEUES_MANAGE = range(2)
 
+
 eventInfo = []
 
 ##################################################
@@ -30,14 +28,13 @@ def start_command(update, context):
     first_name = user['first_name']
     
     bot_welcome = """
-        Hello {}! Welcome to version {} of QueueNow!\n
+        Hello {}! \n\nWelcome to version {} of QueueNow!\n
 Use /newqueue to start a new queue!
 Use /checkqueues to check your current queues!
 Use /help to show more commands!
         """.format(first_name, version)
     
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
-    update.message.reply_text(text=bot_welcome, reply_to_message_id=msg_id)
+    update.message.reply_text(text=bot_welcome)
 
 def help_command(update, context):
     # chat and message IDs
@@ -49,20 +46,17 @@ def help_command(update, context):
 /newqueue : create a new queue
 /checkqueues : check the queues you are in or manage"""
     
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
-    update.message.reply_text(text=bot_help, reply_to_message_id=msg_id)
+    update.message.reply_text(text=bot_help)
     
 def newqueue_command(update, context):
     # chat and message IDs
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     user = update.message.from_user
-    first_name = user['first_name']
 
-    reply = "Hello {}! Let's start off with the name of your event! ".format(first_name)
+    reply = "Alrighty! Let's start with the name of your event! "
     
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
-    update.message.reply_text(text="{}".format(reply), reply_to_message_id=msg_id)
+    update.message.reply_text(text="{}".format(reply))
     
     return NAME_RESPONSE
 
@@ -72,7 +66,6 @@ def name_response(update, context):
     event_name = update.message.text
     eventInfo.append(event_name)
     
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text("""{}? Sounds like it's going to be a lit event!\n
 So how many people are you expecting for {}?""".format(event_name, event_name))
 
@@ -100,19 +93,16 @@ def limit_command(update, context):
         queueTemplate = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
         update.message.reply_text( 
             text=queueTemplate, 
-            reply_to_message_id=msg_id, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
-    except Exception as e:
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
+    except Exception as ex:
         update.message.reply_text("Sorry, please give me a whole number!")
-        print(e)
+        print(ex)
         return LIMIT
 
 def checkqueues_command(update, context):
@@ -128,10 +118,8 @@ def checkqueues_command(update, context):
     bot_check_queue = "Which queues do you want?"
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True) 
     
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text( 
         text=bot_check_queue, 
-        reply_to_message_id=msg_id, 
         reply_markup=reply_markup)
     
 def handle_message(update, context):
@@ -143,7 +131,6 @@ def handle_message(update, context):
     text = str(update.message.text).lower()
     response = "test"
 
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     update.message.reply_text(response)
 
 # def handle_callback_query(update, context):
@@ -206,7 +193,6 @@ def check_queues_in(update, context):
     
     # TODO: get bot to fetch the queues and show the queue
     # TODO: call backend to retrieve queues user is participating in - yr
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     context.bot.sendMessage(
         chat_id=chat_id, 
         text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
@@ -220,7 +206,6 @@ def check_queues_manage(update, context):
     
     # TODO: get bot to fetch the queues and show the queue
     # TODO: call backend to retrieve queues user is managing (aka admin) - yr
-    context.bot.sendChatAction(chat_id=chat_id, action="typing")
     context.bot.sendMessage(
         chat_id=chat_id, 
         text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
@@ -244,16 +229,13 @@ def display_queues_in(update, context):
         queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text( 
             text=queueTemplate, 
-            reply_to_message_id=msg_id, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as e: 
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text("Sorry, please give me a whole number!")
         print(e)
         return QUEUES_IN
@@ -275,16 +257,13 @@ def display_queues_manage(update, context):
         queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text( 
             text=queueTemplate, 
-            reply_to_message_id=msg_id, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as e: 
-        context.bot.sendChatAction(chat_id=chat_id, action="typing")
         update.message.reply_text("Sorry, please give me a whole number!")
         print(e)
         return QUEUES_MANAGE
