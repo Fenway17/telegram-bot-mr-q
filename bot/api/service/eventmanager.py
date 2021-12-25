@@ -1,7 +1,4 @@
 #Start of main.py
-# import event as Event
-# import user as User
-
 from . import event as Event
 from . import user as User
 
@@ -109,36 +106,36 @@ class EventManager:
 
 #------------------ DEBUG CODE ------------------
 
-if __name__ == '__main__':
-    e = EventManager()
-    limit = 15
-    newEvent = Event.Event('first event', '01/01/2021', '00:00', limit)
+# if __name__ == '__main__':
+#     e = EventManager()
+#     limit = 15
+#     newEvent = Event.Event('first event', '01/01/2021', '00:00', limit)
 
 
-    e.add_event(newEvent)
+#     e.add_event(newEvent)
     
-    for i in range(limit + 10): # exceed limit
-        user = User.User(i, str(i), str(i), [])
-        if i == 3:
-            usertodlt = user
-        if i == 22:
-            usertodlt2 = user
-        e.add_user(user)
-        e.add_user_to_event(newEvent, user)
+#     for i in range(limit + 10): # exceed limit
+#         user = User.User(i, str(i), str(i), [])
+#         if i == 3:
+#             usertodlt = user
+#         if i == 22:
+#             usertodlt2 = user
+#         e.add_user(user)
+#         e.add_user_to_event(newEvent, user)
             
-    for event, userList in e.event_hash_map.items():
-        print(event.name, " - partipants queue size", event.participants_list.size())
-        print(event.name, " - waitingList queue size", event.waiting_list.size())
-    print('BEFORE')
-    e.print_event_users(newEvent)
+#     for event, userList in e.event_hash_map.items():
+#         print(event.name, " - partipants queue size", event.participants_list.size())
+#         print(event.name, " - waitingList queue size", event.waiting_list.size())
+#     print('BEFORE')
+#     e.print_event_users(newEvent)
             
-    for event, userList in e.event_hash_map.items():
-        e.remove_user_from_event(event, usertodlt)
-        e.remove_user_from_event(event, usertodlt2)
-        # testuser = User.User(26, str(26), str(26), [])
-        # e.remove_user_from_event(event, testuser)
-    print('\nAFTER')
-    e.print_event_users(newEvent)
+#     for event, userList in e.event_hash_map.items():
+#         e.remove_user_from_event(event, usertodlt)
+#         e.remove_user_from_event(event, usertodlt2)
+#         # testuser = User.User(26, str(26), str(26), [])
+#         # e.remove_user_from_event(event, testuser)
+#     print('\nAFTER')
+#     e.print_event_users(newEvent)
 
     
 

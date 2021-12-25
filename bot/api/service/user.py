@@ -1,4 +1,4 @@
-from event import Event
+from . import event as Event
 
 class User:
     def __init__(self, user_id, username, chat_id, events = []):

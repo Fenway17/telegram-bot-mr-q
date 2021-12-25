@@ -2,7 +2,7 @@ import os, time, json, requests, re
 import datetime 
 from telegram.ext import *
 from telegram import *
-from ..api.service.eventmanager import EventManager
+from .service import eventmanager as EventManager
 # from service import main as EventManager
 # from ..service import event as Event, user as User, main as EventManager
 
@@ -16,7 +16,7 @@ version = "0.1.0"
 NAME_RESPONSE, LIMIT = range(2)
 QUEUES_IN, QUEUES_MANAGE = range(2)
 
-e = EventManager()
+e = EventManager.EventManager()
 eventInfo = []
 
 ##################################################
