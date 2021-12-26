@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from bot.api.route.home import home_api
-from bot.api.handler.main import main
+from bot.api.handler import main
 
 def create_app():
     app = Flask(__name__)
