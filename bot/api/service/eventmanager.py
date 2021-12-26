@@ -28,10 +28,15 @@ class EventManager:
             
     def add_user(self, user):
         print("Adding user: " + user.username + " to EventManager user database")
-        if user not in self.all_users:
+        found_user = next((x for x in self.all_users if x == user), None)
+        if found_user == None:
             self.all_users.append(user)
         else:
-            raise self.throw_exception(user, 'exist')
+            return found_user
+        # if user not in self.all_users:
+        #     self.all_users.append(user)
+        # else:
+        #     raise self.throw_exception(user, 'exist')
 
     ### There won't ever be a need to remove users from the total array of users - Josh/ZF###
     # def remove_user(self, user):
@@ -93,6 +98,11 @@ class EventManager:
         err += ' - ' + comment
         raise ValueError(err)
 
+    def get_event_status(self, event):
+        if event not in self.event_hash_map.keys():
+            raise self.throw_exception(event, 'not exist', '-debug not in event, unable to get')
+        return (event.participants_list, event.waiting_list)
+
 # DEBUGGING TOOLS
     def print_event_users(self, event):
         if event not in self.event_hash_map.keys(): # does not exists in dictionary
@@ -139,6 +149,7 @@ class EventManager:
 #     print('\nAFTER')
 #     e.print_event_users(newEvent)
 
+#     a = e.get_event_status(newEvent)
     
 
 # Hashmap Key: event Values: array of user
