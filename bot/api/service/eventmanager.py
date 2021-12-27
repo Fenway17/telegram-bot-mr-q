@@ -1,6 +1,4 @@
 #Start of main.py
-from . import event as Event
-from . import user as User
 
 class EventManager: 
     def __init__(self):
@@ -27,7 +25,7 @@ class EventManager:
             raise self.throw_exception(event, 'not exist')
             
     def add_user(self, user):
-        print("Adding user: " + user.username + "to EventManager user database")
+        print("Adding user: " + user.username + " to EventManager user database")
         if user not in self.all_users:
             self.all_users.append(user)
         else:
@@ -41,7 +39,6 @@ class EventManager:
     #         raise self.throw_exception(user, 'not exist')
 
     def add_user_to_event(self, event, user):
-        print("Adding " + user.username + " to " + event.name)
         #user exists
         if user in self.all_users:
             # check if user already in event
@@ -53,7 +50,7 @@ class EventManager:
                 self.event_hash_map[event].append(user)
                 event.add_user_to_event(user)
                 user.add_event(event)
-                
+                print("Adding " + user.username + " to " + event.name)
         else:
             #user does not exist
             raise self.throw_exception(user, 'not exist', '\'{username}\' does not exist'

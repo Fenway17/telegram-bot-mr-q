@@ -1,11 +1,12 @@
-from . import event as Event
+from .event import Event
 
 class User:
     def __init__(self, user_id, username, chat_id, events = []):
+        print("Init user class")
         self.user_id = user_id
         self.username = username 
         self.chat_id = chat_id 
-        self.events = events
+        self.events = events # might wanna check this
 
     def get_user_id(self):
         return self.user_id

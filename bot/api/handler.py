@@ -1,10 +1,11 @@
 import os, time, json, requests, re
-import datetime 
+from datetime import datetime as date
+from telegram import user
 from telegram.ext import *
 from telegram import *
-from .service import eventmanager as EventManager
-# from service import main as EventManager
-# from ..service import event as Event, user as User, main as EventManager
+from .service.eventmanager import EventManager
+from .service.event import Event
+from .service.user import User
 
 # global bot key
 BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot
@@ -16,8 +17,9 @@ version = "0.1.0"
 NAME_RESPONSE, LIMIT = range(2)
 QUEUES_IN, QUEUES_MANAGE = range(2)
 
-e = EventManager.EventManager()
-eventInfo = []
+e = EventManager()
+event_info = ['init', 0]
+curr_user = user
 
 ##################################################
              # Command Functions #
@@ -29,6 +31,16 @@ def start_command(update, context):
     user = update.message.from_user
     first_name = user['first_name']
     
+    print(user)
+
+    try: 
+        new_user = User(user['id'], user['username'], chat_id) 
+        e.add_user(new_user)
+        curr_user = new_user
+    except Exception as ex:
+        print(ex)
+
+
     bot_welcome = """
         Hello {}! \n\nWelcome to version {} of QueueNow!\n
 Use /newqueue to start a new queue!
@@ -66,7 +78,7 @@ def name_response(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     event_name = update.message.text
-    eventInfo.append(event_name)
+    event_info[0] = event_name
     
     update.message.reply_text("""{}? Sounds like it's going to be a lit event!\n
 So how many people are you expecting for {}?""".format(event_name, event_name))
@@ -76,13 +88,15 @@ So how many people are you expecting for {}?""".format(event_name, event_name))
 def limit_command(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
-    eventLimit = update.message.text
-    
+    event_limit = update.message.text
+    print('limit command msg id: ',msg_id)
     try: # test if given message is a whole number
-        eventLimitInt = int(eventLimit)
-        eventLimit = str(eventLimitInt) # prevent users from giving a float number
-        eventInfo.append(eventLimit)
-        
+        event_limitInt = int(event_limit)
+        event_limit = str(event_limitInt) # prevent users from giving a float number
+        event_info[1] = event_limit
+        name = event_info[0]
+        limit = event_info[1]
+
         keyboard = [
             [InlineKeyboardButton("Publish Poll", switch_inline_query='PLACEHOLDER')], 
             [InlineKeyboardButton("Update Poll", callback_data='update_poll'),
@@ -91,19 +105,23 @@ def limit_command(update, context):
                 InlineKeyboardButton("I'm not going!", callback_data='dequeue')]
         ]
 
+        new_event = Event(name, date.today().strftime("%d/%m/%Y"), date.now().strftime("%H:%M:%S"), limit)
+        e.add_event(new_event)
+
         # TODO: standardize format of showing queue
-        queueTemplate = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(eventInfo[0], eventInfo[1])
+        queue_template = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(name, limit) # this one need make dynamic, wait for backend to finish the function
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        update.message.reply_text("Ogie, setting event limit to {}".format(eventLimit))
+        update.message.reply_text("Ogie, setting event limit to {}".format(event_limit))
         update.message.reply_text( 
-            text=queueTemplate, 
+            text=queue_template, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as ex:
-        update.message.reply_text("Sorry, please give me a whole number!")
+        # update.message.reply_text("Sorry, please give me a whole number!")
+        # update.message.reply_text(ex)
         print(ex)
         return LIMIT
 
@@ -161,7 +179,7 @@ def hcq_delete(update, context):
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
-
+    print('delete msg id: ', msg_id)
     # TODO: get bot to delete queue
     context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
     
@@ -170,7 +188,12 @@ def hcq_enqueue(update, context):
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
     
+    # When enqueuing, need to check whether user is already in all_users, 
+    # if so then just add to event, else, need to create user 
+
+    print('enqueue msg id: ', msg_id)
     # TODO: add user to queue
+
     context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
     
 def hcq_dequeue(update, context): 
@@ -220,18 +243,18 @@ def display_queues_in(update, context):
         ]
 
         # TODO: standardize format of showing queue
-        queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        queue_template = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         update.message.reply_text( 
-            text=queueTemplate, 
+            text=queue_template, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
-    except Exception as e: 
+    except Exception as ex: 
         update.message.reply_text("Sorry, please give me a whole number!")
-        print(e)
+        print(ex)
         return QUEUES_IN
     
     
@@ -248,18 +271,18 @@ def display_queues_manage(update, context):
         ]
 
         # TODO: standardize format of showing queue
-        queueTemplate = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        queue_template = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         update.message.reply_text( 
-            text=queueTemplate, 
+            text=queue_template, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
-    except Exception as e: 
+    except Exception as ex: 
         update.message.reply_text("Sorry, please give me a whole number!")
-        print(e)
+        print(ex)
         return QUEUES_MANAGE
     
 def handle_inline_query(update, context):
