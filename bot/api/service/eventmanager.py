@@ -67,6 +67,7 @@ class EventManager:
                 # self.eventHashMap[event].remove(user)
                 user.leave_event(event)
                 event.remove_from_event(user)
+                self.event_hash_map[event].remove(user)
             else:
                 #user not in event, throw error
                 raise self.throw_exception(user, 'not exist', '\'{username}\' not in event, unable to remove'
@@ -87,6 +88,19 @@ class EventManager:
                 err = '{str} is not contained'.format(str=type(cause).__name__)
         err += ' - ' + comment
         raise ValueError(err)
+    
+    def get_event(self, event_id):
+        for event in self.event_hash_map.keys():
+            if int(event_id) == int(event.eventId):
+                return event
+        raise self.throw_exception(event_id, 'not exist', '-event_id not in event_hash_map, unable to get')
+    
+    def get_user(self, user_id):
+        for user in self.all_users:
+            print(user, user_id, user.user_id)
+            if int(user_id) == int(user.user_id):
+                return user
+        raise self.throw_exception(user_id, 'not exist', '-user_id not in user array, unable to get')
 
 # DEBUGGING TOOLS
     def print_event_users(self, event):

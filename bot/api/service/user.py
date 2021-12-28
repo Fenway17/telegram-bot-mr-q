@@ -1,9 +1,10 @@
 from .event import Event
 
 class User:
-    def __init__(self, user_id, username, chat_id, events = []):
+    def __init__(self, user_id, fullname, username, chat_id, events = []):
         print("Init user class")
         self.user_id = user_id
+        self.fullname = fullname
         self.username = username 
         self.chat_id = chat_id 
         self.events = events # might wanna check this
@@ -16,6 +17,9 @@ class User:
 
     def get_events(self):
         return self.events
+    
+    def get_fullname(self):
+        return self.fullname
 
     def add_event(self, event):
         self.events.append(event) # to-do discuss changes here
@@ -24,8 +28,8 @@ class User:
         self.events.remove(event) # to-do discuss changes here
 
 class Admin(User):
-    def __init__(self, user_id, username, chat_id, events_being_managed: dict, events = []):
-        super().__init__(user_id, username, chat_id, events)
+    def __init__(self, user_id, fullname, username, chat_id, events_being_managed: dict, events = []):
+        super().__init__(user_id, fullname, username, chat_id, events)
         self.events_being_managed = events_being_managed
 
     def create_event(self, name, date, time, participants_limit, waiting_list_limit = None):

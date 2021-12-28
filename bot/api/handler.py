@@ -19,7 +19,9 @@ QUEUES_IN, QUEUES_MANAGE = range(2)
 
 e = EventManager()
 event_info = ['init', 0]
-curr_user = user
+
+# TODO: this will probably break if >1 person is communicating with the bot at the same time
+current_user = user
 
 ##################################################
              # Command Functions #
@@ -29,24 +31,24 @@ def start_command(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
     user = update.message.from_user
-    first_name = user['first_name']
+    fullname = user['first_name']
     
     print(user)
 
     try: 
-        new_user = User(user['id'], user['username'], chat_id) 
+        # TODO: adding a new user cannot be just from /start command
+        new_user = User(user_id=user['id'], fullname=fullname, username=user['username'], chat_id=chat_id) 
         e.add_user(new_user)
-        curr_user = new_user
+        # TODO: this will probably break if >1 person is communicating with the bot at the same time
+        current_user = new_user
     except Exception as ex:
         print(ex)
-
 
     bot_welcome = """
         Hello {}! \n\nWelcome to version {} of QueueNow!\n
 Use /newqueue to start a new queue!
 Use /checkqueues to check your current queues!
-Use /help to show more commands!
-        """.format(first_name, version)
+Use /help to show more commands!""".format(fullname, version)
     
     update.message.reply_text(text=bot_welcome)
 
@@ -70,7 +72,7 @@ def newqueue_command(update, context):
 
     reply = "Alrighty! Let's start with the name of your event! "
     
-    update.message.reply_text(text="{}".format(reply))
+    update.message.reply_text(text=reply)
     
     return NAME_RESPONSE
 
@@ -91,38 +93,29 @@ def limit_command(update, context):
     event_limit = update.message.text
     print('limit command msg id: ',msg_id)
     try: # test if given message is a whole number
-        event_limitInt = int(event_limit)
-        event_limit = str(event_limitInt) # prevent users from giving a float number
+        event_limitInt = int(event_limit) # prevent users from giving a float number
+        event_limit = str(event_limitInt) 
         event_info[1] = event_limit
-        name = event_info[0]
-        limit = event_info[1]
+        event_name = event_info[0]
+        event_limit = event_info[1]
 
-        keyboard = [
-            [InlineKeyboardButton("Publish Poll", switch_inline_query='PLACEHOLDER')], 
-            [InlineKeyboardButton("Update Poll", callback_data='update_poll'),
-                InlineKeyboardButton("Delete Poll", callback_data='delete_poll')],
-            [InlineKeyboardButton("I'm going!", callback_data='enqueue'),
-                InlineKeyboardButton("I'm not going!", callback_data='dequeue')]
-        ]
-
-        new_event = Event(name, date.today().strftime("%d/%m/%Y"), date.now().strftime("%H:%M:%S"), limit)
+        new_event = Event(event_name, date.today().strftime("%d/%m/%Y"), date.now().strftime("%H:%M:%S"), event_limit)
         e.add_event(new_event)
-
-        # TODO: standardize format of showing queue
-        queue_template = "{}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(name, limit) # this one need make dynamic, wait for backend to finish the function
+        event_id = str(new_event.get_event_id())
+        
+        keyboard = build_event_buttons(event_id, 'admin')
+        queue_message = build_queue_message(new_event)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        update.message.reply_text("Ogie, setting event limit to {}".format(event_limit))
+        update.message.reply_text("Okie, setting event limit to {}".format(event_limit))
         update.message.reply_text( 
-            text=queue_template, 
+            text=queue_message, 
             reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as ex:
-        # update.message.reply_text("Sorry, please give me a whole number!")
-        # update.message.reply_text(ex)
-        print(ex)
+        update.message.reply_text("Sorry, please give me a whole number!")
         return LIMIT
 
 def checkqueues_command(update, context):
@@ -171,48 +164,119 @@ def hcq_update(update, context):
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
+    query_data = update.callback_query.data
     
-    # TODO: get bot to fetch the current queue and edit the message to show the updated queue
-    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    data_list = query_data.split('_')
+    event_id = data_list[1]
+    button_type = data_list[2]
+    
+    try:
+        event = e.get_event(event_id)
+    except Exception as exception:
+        context.bot.answerCallbackQuery(text='Event not found!', callback_query_id=query_id)
+        return
+    
+    queue_message = build_queue_message(event)
+    keyboard = build_event_buttons(event_id, button_type)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    try:
+        context.bot.edit_message_text(text=queue_message, chat_id=chat_id, message_id=msg_id, reply_markup=reply_markup)
+        context.bot.answerCallbackQuery(text='Event updated!', callback_query_id=query_id)
+    except Exception as exception:
+        context.bot.answerCallbackQuery(text='Event is already updated!', callback_query_id=query_id)
+        
 
 def hcq_delete(update, context): 
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
+    query_data = update.callback_query.data
+    message = update.callback_query.message
+    
     print('delete msg id: ', msg_id)
-    # TODO: get bot to delete queue
-    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    
+    data_list = query_data.split('_')
+    event_id = data_list[1]
+    
+    try:
+        event = e.get_event(event_id)
+        queue_message = build_queue_message(event)
+        e.remove_event(event)
+        context.bot.edit_message_text(text=queue_message, chat_id=chat_id, message_id=msg_id)
+        context.bot.answerCallbackQuery(text='Event deleted!', callback_query_id=query_id)
+    except:
+        context.bot.answerCallbackQuery(text='Event not found!', callback_query_id=query_id)
     
 def hcq_enqueue(update, context): 
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
-    
-    # When enqueuing, need to check whether user is already in all_users, 
-    # if so then just add to event, else, need to create user 
+    query_data = update.callback_query.data
+    user_id = update.callback_query.from_user.id
 
     print('enqueue msg id: ', msg_id)
-    # TODO: add user to queue
-
-    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    
+    data_list = query_data.split('_')
+    event_id = data_list[1]
+    button_type = data_list[2]
+    
+    try:
+        event = e.get_event(event_id)
+    except Exception as exception:
+        context.bot.answerCallbackQuery(text='Event not found!', callback_query_id=query_id)
+        return
+    
+    try:
+        user = e.get_user(user_id)
+        e.add_user_to_event(event, user)
+        queue_message = build_queue_message(event)
+        keyboard = build_event_buttons(event_id, button_type)
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        context.bot.edit_message_text(text=queue_message, chat_id=chat_id, message_id=msg_id, reply_markup=reply_markup)
+        context.bot.answerCallbackQuery(text='You are added!', callback_query_id=query_id)
+    except Exception as exception:
+        print(exception)
+        context.bot.answerCallbackQuery(text='You are already added!', callback_query_id=query_id)
     
 def hcq_dequeue(update, context): 
     chat_id = update.callback_query.message.chat.id
     msg_id = update.callback_query.message.message_id
     query_id = update.callback_query.id
+    query_data = update.callback_query.data
+    user_id = update.callback_query.from_user.id
     
-    # TODO: remove user from queue
-    context.bot.answerCallbackQuery(text='Placeholder', callback_query_id=query_id)
+    data_list = query_data.split('_')
+    event_id = data_list[1]
+    button_type = data_list[2]
+    
+    try:
+        event = e.get_event(event_id)
+    except Exception as exception:
+        context.bot.answerCallbackQuery(text='Event not found!', callback_query_id=query_id)
+        return
+    
+    try:
+        user = e.get_user(user_id)
+        e.remove_user_from_event(event, user)
+        queue_message = build_queue_message(event)
+        keyboard = build_event_buttons(event_id, button_type)
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        context.bot.edit_message_text(text=queue_message, chat_id=chat_id, message_id=msg_id, reply_markup=reply_markup)
+        context.bot.answerCallbackQuery(text='You are removed!', callback_query_id=query_id)
+    except Exception as exception:
+        context.bot.answerCallbackQuery(text='You are already removed!', callback_query_id=query_id)
     
 def check_queues_in(update, context): 
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
+    user_id = update.message.from_user.id
     
-    # TODO: get bot to fetch the queues and show the queue
-    # TODO: call backend to retrieve queues user is participating in - yr
-    context.bot.sendMessage(
-        chat_id=chat_id, 
-        text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
+    queues_message = build_queues_list(user_id)
+    
+    context.bot.sendMessage(chat_id=chat_id, text=queues_message)
     context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
     
     return QUEUES_IN
@@ -220,12 +284,12 @@ def check_queues_in(update, context):
 def check_queues_manage(update, context): 
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
+    user_id = update.message.from_user.id
     
-    # TODO: get bot to fetch the queues and show the queue
-    # TODO: call backend to retrieve queues user is managing (aka admin) - yr
-    context.bot.sendMessage(
-        chat_id=chat_id, 
-        text="""Here are your queues: \n\n1. Queue 1 \n2. Queue 2""")
+    # TODO: Ask backend how user participating queues are different from admin queues
+    queues_message = build_queues_list(user_id)
+    
+    context.bot.sendMessage(chat_id=chat_id, text=queues_message)
     context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
     
     return QUEUES_MANAGE
@@ -237,24 +301,19 @@ def display_queues_in(update, context):
     
     try:
         selected_queue = int(selected_queue)
-        keyboard = [ 
-            [InlineKeyboardButton("I'm not going anymore!", callback_data='dequeue')],
-            [InlineKeyboardButton("Update queue", callback_data='update_poll')]
-        ]
-
-        # TODO: standardize format of showing queue
-        queue_template = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        # TODO: get event id from event name in the list (potential problem of non unique names)
+        event_id = '0' # PLACEHOLDER
+        keyboard = build_event_buttons(event_id, 'non_admin')
+        event = e.get_event(event_id)
+        queue_template = build_queue_message(event)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        update.message.reply_text( 
-            text=queue_template, 
-            reply_markup=reply_markup)
+        update.message.reply_text(text=queue_template, reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as ex: 
         update.message.reply_text("Sorry, please give me a whole number!")
-        print(ex)
         return QUEUES_IN
     
     
@@ -265,24 +324,19 @@ def display_queues_manage(update, context):
     
     try:
         selected_queue = int(selected_queue)
-        keyboard = [ 
-            [InlineKeyboardButton("I'm not going anymore!", callback_data='dequeue')],
-            [InlineKeyboardButton("Update queue", callback_data='update_poll')]
-        ]
-
-        # TODO: standardize format of showing queue
-        queue_template = "Queue {}\n\nI'm going! (Max Limit: {} pax)\n\nWaiting List: \n".format(selected_queue, "69")
+        # TODO: get event id from event name in the list (potential problem of non unique names)
+        event_id = '0' # PLACEHOLDER
+        keyboard = build_event_buttons(event_id, 'non_admin')
+        event = e.get_event(event_id)
+        queue_template = build_queue_message(event)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        update.message.reply_text( 
-            text=queue_template, 
-            reply_markup=reply_markup)
+        update.message.reply_text(text=queue_template, reply_markup=reply_markup)
 
         return ConversationHandler.END
     
     except Exception as ex: 
         update.message.reply_text("Sorry, please give me a whole number!")
-        print(ex)
         return QUEUES_MANAGE
     
 def handle_inline_query(update, context):
@@ -310,26 +364,26 @@ def handle_inline_query(update, context):
 ##################################################
 def build_queue_message(event):
     # fetch variables
-    event_id = event.id
+    event_id = event.get_event_id()
     event_name = event.name
     event_date = event.date
     event_time = event.time 
-    event_participants = event.participants_list
+    event_participants = event.participants_list.items
     event_participants_max = str(event.participants_limit)
-    event_waiting = event.waiting_list
+    event_waiting = event.waiting_list.items
     
     participants = ""
     waiting = ""
     participants_count = 0
     waiting_count = 0
     for person in event_participants:
-        name = person.name
-        participants.append(name + "\n")
+        name = person.fullname
+        participants += name + "\n"
         participants_count += 1
     
     for person in event_waiting:
-        name = person.name
-        waiting.append(name + "\n")
+        name = person.fullname
+        waiting += name + "\n"
         waiting_count += 1
     
     message_content = """
@@ -341,6 +395,54 @@ Waiting! ({} people)
 """.format(event_name, str(participants_count), event_participants_max, participants, str(waiting_count), waiting)
     
     return message_content
+
+def build_queues_list(user_id):
+    user = e.get_user(user_id)
+    user_events = user.events
+    
+    message = "These are your queues! \n\n"
+    event_counter = 1
+    
+    for event in user_events:
+        message += str(event_counter) + ". " + event.name + "\n"
+        event_counter += 1
+        
+    return message
+    
+def build_event_buttons(event_id, type):
+    # event_id is the unique id of event, type defines the keyboard buttons generated
+    event_id = str(event_id)
+    update_button = 'update_' + event_id + '_' + str(type)
+    delete_button = 'delete_' + event_id + '_' + str(type)
+    enqueue_button = 'enqueue_' + event_id + '_' + str(type)
+    dequeue_button = 'dequeue_' + event_id + '_' + str(type)
+    
+    if type == 'admin':
+        keyboard = [
+                [InlineKeyboardButton("Publish Queue", switch_inline_query='PLACEHOLDER')], 
+                [InlineKeyboardButton("Update Queue", callback_data=update_button),
+                    InlineKeyboardButton("Delete Queue", callback_data=delete_button)],
+                [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
+                    InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
+            ]
+    elif type == 'non_admin':
+        keyboard = [ 
+                [InlineKeyboardButton("Update Queue", callback_data=update_button)],
+                [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
+                    InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
+            ]
+    elif type == 'group':
+        keyboard = [ 
+                [InlineKeyboardButton("Update Queue", callback_data=update_button)],
+                [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
+                    InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
+            ]
+    else:
+        keyboard = [ 
+                [InlineKeyboardButton("Unrecognized type", callback_data=''),]
+            ]
+        
+    return keyboard
 
 def setMyCommands():
     # sets command suggestions for the bot
@@ -379,7 +481,7 @@ def main():
     # checkqueue conversation handler
     checkqueue_convo_handler = ConversationHandler(
         entry_points=[
-            MessageHandler(Filters.regex(re.compile('Queues I\'m in', re.IGNORECASE)), check_queues_in),
+            MessageHandler(Filters.regex(re.compile('Queues I\'m participating in', re.IGNORECASE)), check_queues_in),
             MessageHandler(Filters.regex(re.compile('Queues I manage', re.IGNORECASE)), check_queues_in)],
         states = {
             QUEUES_IN: [MessageHandler(Filters.text, display_queues_in)],
@@ -396,8 +498,8 @@ def main():
     dp.add_handler(CommandHandler('help', help_command))
     
     # callback query handlers
-    dp.add_handler(CallbackQueryHandler(hcq_update, pattern='update_poll'))
-    dp.add_handler(CallbackQueryHandler(hcq_delete, pattern='delete_poll'))
+    dp.add_handler(CallbackQueryHandler(hcq_update, pattern='update'))
+    dp.add_handler(CallbackQueryHandler(hcq_delete, pattern='delete'))
     dp.add_handler(CallbackQueryHandler(hcq_enqueue, pattern='enqueue'))
     dp.add_handler(CallbackQueryHandler(hcq_dequeue, pattern='dequeue'))
     # dp.add_handler(CallbackQueryHandler(hcq_check_queues_in, pattern='queues_in'))
