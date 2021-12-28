@@ -92,6 +92,7 @@ def limit_command(update, context):
     msg_id = update.message.message_id
     event_limit = update.message.text
     print('limit command msg id: ',msg_id)
+    
     try: # test if given message is a whole number
         event_limitInt = int(event_limit) # prevent users from giving a float number
         event_limit = str(event_limitInt) 
@@ -303,7 +304,7 @@ def display_queues_in(update, context):
         selected_queue = int(selected_queue)
         # TODO: get event id from event name in the list (potential problem of non unique names)
         event_id = '0' # PLACEHOLDER
-        keyboard = build_event_buttons(event_id, 'non_admin')
+        keyboard = build_event_buttons(event_id, 'non-admin')
         event = e.get_event(event_id)
         queue_template = build_queue_message(event)
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -326,7 +327,7 @@ def display_queues_manage(update, context):
         selected_queue = int(selected_queue)
         # TODO: get event id from event name in the list (potential problem of non unique names)
         event_id = '0' # PLACEHOLDER
-        keyboard = build_event_buttons(event_id, 'non_admin')
+        keyboard = build_event_buttons(event_id, 'admin')
         event = e.get_event(event_id)
         queue_template = build_queue_message(event)
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -425,21 +426,21 @@ def build_event_buttons(event_id, type):
                 [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
                     InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
             ]
-    elif type == 'non_admin':
-        keyboard = [ 
+    elif type == 'non-admin':
+        keyboard = [
                 [InlineKeyboardButton("Update Queue", callback_data=update_button)],
                 [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
                     InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
             ]
     elif type == 'group':
-        keyboard = [ 
+        keyboard = [
                 [InlineKeyboardButton("Update Queue", callback_data=update_button)],
                 [InlineKeyboardButton("I'm going!", callback_data=enqueue_button),
                     InlineKeyboardButton("I'm not going!", callback_data=dequeue_button)]
             ]
     else:
-        keyboard = [ 
-                [InlineKeyboardButton("Unrecognized type", callback_data=''),]
+        keyboard = [
+                [InlineKeyboardButton("Unrecognized type", callback_data='unrecognized')]
             ]
         
     return keyboard
