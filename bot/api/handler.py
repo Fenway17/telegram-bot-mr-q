@@ -275,12 +275,17 @@ def check_queues_in(update, context):
     msg_id = update.message.message_id
     user_id = update.message.from_user.id
     
-    queues_message = build_queues_list(user_id)
+    if e.get_user(user_id).events:
+        queues_message = build_queues_list(user_id)
+        
+        context.bot.sendMessage(chat_id=chat_id, text=queues_message)
+        context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
+        
+        return QUEUES_IN
     
-    context.bot.sendMessage(chat_id=chat_id, text=queues_message)
-    context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
-    
-    return QUEUES_IN
+    else:
+        context.bot.sendMessage(chat_id=chat_id, text="You are not participating in any event queues!")
+        return ConversationHandler.END
 
 def check_queues_manage(update, context): 
     chat_id = update.message.chat.id
@@ -288,13 +293,18 @@ def check_queues_manage(update, context):
     user_id = update.message.from_user.id
     
     # TODO: Ask backend how user participating queues are different from admin queues
-    queues_message = build_queues_list(user_id)
+    if e.get_user(user_id).events:
+        queues_message = build_queues_list(user_id)
+        
+        context.bot.sendMessage(chat_id=chat_id, text=queues_message)
+        context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
+        
+        return QUEUES_MANAGE
     
-    context.bot.sendMessage(chat_id=chat_id, text=queues_message)
-    context.bot.sendMessage(chat_id=chat_id, text="Send me the queue number you want to check!")
+    else:
+        context.bot.sendMessage(chat_id=chat_id, text="You are not managing any event queues!")
+        return ConversationHandler.END
     
-    return QUEUES_MANAGE
-
 def display_queues_in(update, context):
     chat_id = update.message.chat.id
     msg_id = update.message.message_id
