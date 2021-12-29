@@ -1,4 +1,4 @@
-from . import customqueue as CustomQueue
+from .customqueue import CustomQueue
 
 # global strings to use for exception messages 
 already_in_participants = "The user you are trying to add is already in the participants list"
@@ -10,6 +10,7 @@ class Event:
     id = 0
 
     def __init__(self, name, date, time, participants_limit, waiting_list_limit = None):
+        print("Init event class")
         self.eventId = Event.id
         self.name = name 
         self.date = date
