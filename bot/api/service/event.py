@@ -16,8 +16,8 @@ class Event:
         self.date = date
         self.time = time
         self.participants_limit = participants_limit # added this for convenience - yr
-        self.participants_list = CustomQueue(participants_limit)
-        self.waiting_list = CustomQueue(waiting_list_limit)
+        self.participants_list = CustomQueue.CustomQueue(participants_limit)
+        self.waiting_list = CustomQueue.CustomQueue(waiting_list_limit)
 
         Event.id += 1
 
@@ -53,6 +53,11 @@ class Event:
     def remove_from_event(self, user):
         if self.participants_list.contains(user):
             self.participants_list.remove(user)
+            if not self.waiting_list.is_empty():
+                new_participant_user = self.waiting_list.dequeue()
+                print("pop " + new_participant_user.username + " from waiting list")
+                print("add " + new_participant_user.username + " into participant list")
+                self.participants_list.enqueue(new_participant_user) 
         elif self.waiting_list.contains(user):
             self.waiting_list.remove(user)
         else: 

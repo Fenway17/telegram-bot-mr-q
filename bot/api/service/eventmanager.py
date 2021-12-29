@@ -5,7 +5,7 @@ class EventManager:
         print("Initialising Event Manager")
         self.event_hash_map = {} # event -> [user]
         self.all_users = []
-
+    
     def add_event(self, event):
         print("Adding event: " + event.name + " to EventManager")
         if event not in self.event_hash_map:
@@ -55,8 +55,7 @@ class EventManager:
             #user does not exist
             raise self.throw_exception(user, 'not exist', '\'{username}\' does not exist'
                 .format(username=user.get_username()))
-
-
+    
     def remove_user_from_event(self, event, user):
         print("Removing " + user.username + " from " + event.name)
         #user exists
@@ -78,6 +77,9 @@ class EventManager:
             raise self.throw_exception(user, 'not exist', '\'{username}\' does not exist'
                 .format(username=user.username))
 
+    def get_user_events(self, user):
+        return user.get_events()
+        
     def throw_exception(self, cause, reason, comment=''):
         err = ''
         match reason:
@@ -101,6 +103,11 @@ class EventManager:
             if int(user_id) == int(user.user_id):
                 return user
         raise self.throw_exception(user_id, 'not exist', '-user_id not in user array, unable to get')
+
+    def get_event_status(self, event):
+        if event not in self.event_hash_map.keys():
+            raise self.throw_exception(event, 'not exist', '-debug not in event, unable to get')
+        return (event.participants_list, event.waiting_list)
 
 # DEBUGGING TOOLS
     def print_event_users(self, event):
@@ -148,6 +155,7 @@ class EventManager:
 #     print('\nAFTER')
 #     e.print_event_users(newEvent)
 
+#     a = e.get_event_status(newEvent)
     
 
 # Hashmap Key: event Values: array of user
