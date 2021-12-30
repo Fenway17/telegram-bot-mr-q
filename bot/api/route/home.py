@@ -1,6 +1,5 @@
 from http import HTTPStatus
 from flask import Blueprint
-from ..model.welcome import WelcomeModel
 from ..schema.welcome import WelcomeSchema
 
 home_api = Blueprint('api', __name__)
