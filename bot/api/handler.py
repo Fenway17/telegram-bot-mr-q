@@ -4,8 +4,8 @@ from telegram import user
 from telegram.ext import *
 from telegram import *
 from .service.eventmanager import EventManager
-from .service.event import Event
-from .service.user import User
+from ...event import Event
+from ...user import User
 
 # global bot key
 BOT_KEY = os.getenv('BOT_KEY') # reads .env file from your root folder of this bot

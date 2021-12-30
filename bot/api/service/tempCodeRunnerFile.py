@@ -1,0 +1,1 @@
+self.db.collection(u'events').document(u'')
