@@ -5,8 +5,8 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 # from .customqueue import CustomQueue
-from user import User
-from event import Event
+from .model.user import User
+from .model.event import Event
 
 class Database:
 	def __init__(self, G_KEY):
