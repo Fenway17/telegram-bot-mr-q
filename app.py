@@ -9,7 +9,7 @@ from bot.api.route.home import home_api
 from bot.api.handler import main
 from bot.api.handler import main
 
-from database import Database
+from bot.api.service.database import Database
 def create_app():
     app = Flask(__name__)
     basedir = path.abspath(path.dirname(__file__))

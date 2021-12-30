@@ -128,3 +128,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+bot/api/service/queuenow-feb63-firebase-adminsdk-q2oln-356a78dc52.json
