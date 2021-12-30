@@ -1,4 +1,6 @@
-from event import Event
+from bot.api.service.event import Event
+
+# events will store a list of references to events, NOT the actual events themselves
 
 class User:
 	def __init__(self, user_id, fullname, username, chat_id=0, events = []):
@@ -21,11 +23,11 @@ class User:
 	def get_fullname(self):
 		return self.fullname
 
-	def add_event(self, event):
-		self.events.append(event) # to-do discuss changes here
+	def add_event(self, event_ref):
+		self.events.append(event_ref) # to-do discuss changes here
 
-	def leave_event(self, event):
-		self.events.remove(event) # to-do discuss changes here
+	def leave_event(self, event_ref):
+		self.events.remove(event_ref) # to-do discuss changes here
 
 	@staticmethod
 	def from_dict(source):

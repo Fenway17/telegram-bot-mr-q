@@ -2,9 +2,9 @@
 queue_is_full = "The queue is full. You cannot enqueue any more users"
 
 class CustomQueue:
-	def __init__(self, limit=0):
+	def __init__(self, items = [], limit=0):
 		print("Init custom queue")
-		self.items = []
+		self.items = items
 		self.limit = limit
 
 	def is_empty(self):
